@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Auto Scroller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f8f8;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #fe2c55;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #fe2c55;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .running {
+            background-color: #e6f7ff;
+            color: #0070c9;
+        }
+        .stopped {
+            background-color: #fff1f0;
+            color: #ff4d4f;
+        }
+        .log {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #f5f5f5;
+        }
+        .info {
+            padding: 15px;
+            margin-top: 20px;
+            background-color: #fffbe6;
+            border-radius: 5px;
+            border-left: 4px solid #faad14;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TikTok Auto Scroller</h1>
+        
+        <div class="form-group">
+            <label for="minInterval">Minimum Interval (seconds):</label>
+            <input type="number" id="minInterval" value="10" min="1" max="60">
+        </div>
+        
+        <div class="form-group">
+            <label for="maxInterval">Maximum Interval (seconds):</label>
+            <input type="number" id="maxInterval" value="30" min="1" max="60">
+        </div>
+        
+        <button id="startBtn">Start Auto Scrolling</button>
+        <button id="stopBtn" style="display: none;">Stop Scrolling</button>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="log" class="log"></div>
+        
+        <div class="info">
+            <p><strong>Instructions:</strong></p>
+            <p>1. Launch TikTok from your device</p>
+            <p>2. Return to this app and set your desired scroll intervals</p>
+            <p>3. Press "Start Auto Scrolling"</p>
+            <p>4. Switch back to TikTok</p>
+            <p>5. The app will automatically scroll at random intervals</p>
+            <p>6. Return to this app to stop scrolling</p>
+        </div>
+    </div>
+
+    <script>
+        let scrollInterval;
+        let isRunning = false;
+        let scrollCount = 0;
+        
+        // Elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+        const minIntervalInput = document.getElementById('minInterval');
+        const maxIntervalInput = document.getElementById('maxInterval');
+        
+        // Add log entry
+        function addLog(message) {
+            const logEntry = document.createElement('p');
+            logEntry.style.margin = '5px 0';
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Check if values are valid
+        function validateInputs() {
+            const min = parseInt(minIntervalInput.value);
+            const max = parseInt(maxIntervalInput.value);
+            
+            if (isNaN(min) || isNaN(max) || min <= 0 || max <= 0) {
+                return false;
+            }
+            
+            if (min > max) {
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Perform scroll action
+        function performScroll() {
+            try {
+                // This is where we would normally perform the actual scrolling
+                // Since we cannot directly control TikTok from a webpage,
+                // we're using Android's Accessibility Service when this is compiled as an APK
+                
+                scrollCount++;
+                addLog(`Scrolled ${scrollCount} times`);
+                
+                // Schedule next scroll with random interval
+                const min = parseInt(minIntervalInput.value);
+                const max = parseInt(maxIntervalInput.value);
+                const randomInterval = Math.floor(Math.random() * (max - min + 1)) + min;
+                
+                addLog(`Next scroll in ${randomInterval} seconds`);
+                
+                // Using Android's Accessibility API when compiled as APK
+                if (typeof Android !== 'undefined') {
+                    try {
+                        Android.performScroll();
+                    } catch (e) {
+                        addLog(`Error with Android interface: ${e.message}`);
+                    }
+                }
+                
+                scrollInterval = setTimeout(performScroll, randomInterval * 1000);
+            } catch (error) {
+                addLog(`Error: ${error.message}`);
+                stopScrolling();
+            }
+        }
+        
+        // Start scrolling
+        function startScrolling() {
+            if (!validateInputs()) {
+                alert('Please enter valid interval values. Maximum must be greater than or equal to minimum.');
+                return;
+            }
+            
+            isRunning = true;
+            scrollCount = 0;
+            
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            
+            statusDiv.className = 'status running';
+            statusDiv.textContent = 'Auto-scrolling is ACTIVE';
+            
+            const min = parseInt(minIntervalInput.value);
+            const max = parseInt(maxIntervalInput.value);
+            
+            addLog(`Starting auto-scroll with interval: ${min}-${max} seconds`);
+            addLog('Switch to TikTok app now!');
+            
+            // Notify Android when compiled as APK
+            if (typeof Android !== 'undefined') {
+                try {
+                    Android.startScrolling(min, max);
+                } catch (e) {
+                    addLog(`Error with Android interface: ${e.message}`);
+                }
+            }
+            
+            // Initial scroll after a brief delay to allow user to switch apps
+            scrollInterval = setTimeout(performScroll, 5000);
+        }
+        
+        // Stop scrolling
+        function stopScrolling() {
+            isRunning = false;
+            clearTimeout(scrollInterval);
+            
+            startBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+            
+            statusDiv.className = 'status stopped';
+            statusDiv.textContent = 'Auto-scrolling is STOPPED';
+            
+            addLog('Auto-scrolling stopped');
+            
+            // Notify Android when compiled as APK
+            if (typeof Android !== 'undefined') {
+                try {
+                    Android.stopScrolling();
+                } catch (e) {
+                    addLog(`Error with Android interface: ${e.message}`);
+                }
+            }
+        }
+        
+        // Check for popups (will be implemented in APK)
+        function checkForPopups() {
+            if (typeof Android !== 'undefined') {
+                try {
+                    const hasPopup = Android.checkForPopups();
+                    if (hasPopup) {
+                        addLog('Popup detected! Stopping auto-scroll.');
+                        stopScrolling();
+                    }
+                } catch (e) {
+                    addLog(`Error checking for popups: ${e.message}`);
+                }
+            }
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startScrolling);
+        stopBtn.addEventListener('click', stopScrolling);
+        
+        // Initialize
+        statusDiv.className = 'status stopped';
+        statusDiv.textContent = 'Auto-scrolling is STOPPED';
+        addLog('App ready. Set your scroll intervals and press Start.');
+    </script>
+</body>
+</html>
